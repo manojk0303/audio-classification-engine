@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.secret_key = "audio_classification_secret_key"
 CORS(app)
 UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'flac'}
+ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg', 'flac', 'm4a'}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -101,62 +101,62 @@ def allowed_file(filename):
 
 def extract_audio_features(file_path):
     """
-    Extract audio features from audio file using librosa
-    This function should extract the same 73 features used during training
+    Extract audio features from audio file using librosa.
+    This function extracts the same features used during training.
     """
     try:
-        # Load audio file
-        y, sr = librosa.load(file_path, sr=None)
+        # Load audio at 16kHz as specified in the training code
+        y, sr = librosa.load(file_path, sr=16000)
         
-        # Extract features (these should match the 73 features expected by your model)
-        # Note: This is a placeholder. You need to implement the same feature extraction
-        # logic that was used during training. The following are common audio features:
+        # 1️⃣ MFCC (13 coefficients)
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+        mfcc_mean = np.mean(mfcc, axis=1)
         
-        # MFCCs (Mel-frequency cepstral coefficients)
-        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-        mfcc_mean = np.mean(mfccs, axis=1)
+        # 2️⃣ CQCC (Using CQT as an approximation)
+        cqt = librosa.cqt(y=y, sr=sr)
+        cqcc = np.abs(cqt)
+        cqcc_mean = np.mean(cqcc, axis=1)[:13]  # Take first 13 coefficients
         
-        # Spectral features
-        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
-        spectral_centroid_mean = np.mean(spectral_centroid)
+        # 3️⃣ LFCC (Linear Spectrogram)
+        stft = np.abs(librosa.stft(y, n_fft=512))
+        lfcc = librosa.amplitude_to_db(stft)
+        lfcc_mean = np.mean(lfcc, axis=1)[:13]  # Take first 13 coefficients
         
-        spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)
-        spectral_bandwidth_mean = np.mean(spectral_bandwidth)
+        # 4️⃣ LogMel Spectrogram
+        logmel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
+        logmel_mean = np.mean(logmel, axis=1)[:13]  # Take first 13 coefficients
         
-        spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)
-        spectral_rolloff_mean = np.mean(spectral_rolloff)
+        # 5️⃣ Spectral Contrast
+        spectral_contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+        spectral_contrast_mean = np.mean(spectral_contrast, axis=1)
         
-        # Zero crossing rate
-        zcr = librosa.feature.zero_crossing_rate(y)
-        zcr_mean = np.mean(zcr)
-        
-        # RMS energy
-        rms = librosa.feature.rms(y=y)
-        rms_mean = np.mean(rms)
-        
-        # Chroma features
+        # 6️⃣ Chroma Feature
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         chroma_mean = np.mean(chroma, axis=1)
         
-        # Onset features
-        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-        onset_mean = np.mean(onset_env)
+        # 7️⃣ Spectral Centroid
+        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)
+        spectral_centroid_mean = np.mean(spectral_centroid)
         
-        # Combine all features into a single array
-        # Adjust this to match your 73 features
-        features = np.concatenate([
-            [spectral_centroid_mean, spectral_bandwidth_mean, spectral_rolloff_mean, zcr_mean, rms_mean, onset_mean],
-            mfcc_mean,
-            chroma_mean
+        # 8️⃣ Pitch Mean Onset
+        pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
+        pitch_values = [np.max(pitches[:, i]) for i in range(pitches.shape[1])]
+        pitch_values = [p for p in pitch_values if p > 0]  # Remove zero values
+        pitch_mean = np.mean(pitch_values) if len(pitch_values) > 0 else 0
+        
+        # Combine all features
+        feature_vector = np.hstack([
+            mfcc_mean, cqcc_mean, lfcc_mean, logmel_mean, spectral_contrast_mean, chroma_mean,
+            [spectral_centroid_mean, pitch_mean]
         ])
         
-        # Pad or truncate to ensure we have exactly 73 features
-        if len(features) < 73:
-            features = np.pad(features, (0, 73 - len(features)))
-        elif len(features) > 73:
-            features = features[:73]
+        # Ensure feature vector has exactly 73 dimensions to match the model's input size
+        if len(feature_vector) < 73:
+            feature_vector = np.pad(feature_vector, (0, 73 - len(feature_vector)))
+        elif len(feature_vector) > 73:
+            feature_vector = feature_vector[:73]
             
-        return features.reshape(1, -1)
+        return feature_vector.reshape(1, -1)
         
     except Exception as e:
         print(f"Error extracting features: {str(e)}")
@@ -182,7 +182,7 @@ def predict():
         
         # Check if the file is allowed
         if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Allowed types: wav, mp3, ogg, flac'})
+            return jsonify({'error': 'Invalid file type. Allowed types: wav, mp3, ogg, flac, m4a'})
         
         # Save the file
         filename = secure_filename(file.filename)
