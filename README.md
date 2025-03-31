@@ -2,6 +2,10 @@
 
 A machine learning system that classifies audio as bonafide (real human speech), spoof (artificially generated or manipulated), or non-speech.
 
+## Demo 
+Check out the demonstration video below:
+
+[![Audio Classification Demo](https://cdn.loom.com/sessions/thumbnails/21f4e9760deb4e2191ecf635f0f147fd-with-play.gif)](https://www.loom.com/share/21f4e9760deb4e2191ecf635f0f147fd?sid=3fc79b5b-6f63-4dba-894f-b31997406926)
 ## Features
 
 - Audio classification using ensemble machine learning approach
