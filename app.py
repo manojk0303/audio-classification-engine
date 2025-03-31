@@ -22,16 +22,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 API_KEY = os.environ.get('API_KEY', 'default_dev_key')
 # API key verification decorator
-def require_api_key(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # print(request.headers)
-        # print(API_KEY)
-        provided_key = request.headers.get('X-API-Key') or request.form.get('api_key')
-        if provided_key and provided_key == API_KEY:
-            return f(*args, **kwargs)
-        return jsonify({'error': 'Unauthorized: Invalid API key'}), 401
-    return decorated_function
+# def require_api_key(f):
+#     @wraps(f)
+#     def decorated_function(*args, **kwargs):
+#         # print(request.headers)
+#         # print(API_KEY)
+#         provided_key = request.headers.get('X-API-Key') or request.form.get('api_key')
+#         if provided_key and provided_key == API_KEY:
+#             return f(*args, **kwargs)
+#         return jsonify({'error': 'Unauthorized: Invalid API key'}), 401
+#     return decorated_function
 
 # Define the MLP model architecture
 class MLPClassifier(nn.Module):
@@ -167,7 +167,7 @@ def home():
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
-@require_api_key
+# @require_api_key
 def predict():
     try:
         # Check if a file was uploaded

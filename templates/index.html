@@ -456,9 +456,6 @@
                 
                 // Submit the form
                 fetch('/predict', {
-                    headers: {
-                        'X-API-Key': '{{API_KEY}}' // Will be replaced during build
-                    },
                     method: 'POST',
                     body: formData
                 })

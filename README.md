@@ -39,7 +39,7 @@ python app.py
 - Renders the main application interface
 
 ### `POST /predict`
-- Accepts audio file uploads for classification (make sure to add API_KEY in header)
+- Accepts audio file uploads for classification 
 - Returns prediction results as JSON
 
 
