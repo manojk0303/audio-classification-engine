@@ -23,7 +23,7 @@ Check out the demonstration video below:
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/audio-classification-engine.git
+git clone https://github.com/manojk0303/audio-classification-engine.git
 cd audio-classification-engine
 ```
 
